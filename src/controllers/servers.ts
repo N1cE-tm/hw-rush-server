@@ -31,6 +31,44 @@ export const getData = async (req: Request, res: Response, next: NextFunction) =
 	}
 };
 
+export const createNodes = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const { ids } = req.body;
+
+		const Server = ogm.model("Server");
+
+		await Server.create({ input: ids.map((id: string) => ({ name: id })) });
+
+		broadcast((client) => client.json("nodes/add", { nodes: ids }));
+
+		return res.json({
+			success: true,
+			data: ids,
+		});
+	} catch (e) {
+		next(e);
+	}
+};
+
+export const deleteNodes = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const { ids } = req.body;
+
+		const Server = ogm.model("Server");
+
+		await Server.delete({ where: { name_IN: ids } });
+
+		broadcast((client) => client.json("nodes/remove", { nodes: ids }));
+
+		return res.json({
+			success: true,
+			data: ids,
+		});
+	} catch (e) {
+		next(e);
+	}
+};
+
 export const connectNodes = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { from, to } = req.body;
