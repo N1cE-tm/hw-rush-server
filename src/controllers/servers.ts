@@ -153,6 +153,23 @@ export const clear = async (req: Request, res: Response, next: NextFunction) => 
 	}
 };
 
+export const drop = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const Server = ogm.model("Server");
+
+		const data = await Server.delete();
+
+		broadcast((client) => client.json("clear", {}));
+
+		return res.json({
+			success: true,
+			data,
+		});
+	} catch (e) {
+		next(e);
+	}
+};
+
 export const disconnectNodes = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { from, to } = req.body;

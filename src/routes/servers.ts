@@ -9,6 +9,7 @@ import {
 	setMain,
 	getWay,
 	clear,
+	drop,
 } from "@/controllers/servers";
 
 const router = express.Router();
@@ -22,5 +23,6 @@ router.post("/bigdata", connectNodesBigdata);
 router.post("/disconnect", disconnectNodes);
 router.post("/main", setMain);
 router.delete("/clear", clear);
+router.delete("/drop", drop);
 
 export default router;
