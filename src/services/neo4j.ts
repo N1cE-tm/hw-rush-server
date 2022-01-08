@@ -4,7 +4,11 @@ import neo4j from "neo4j-driver";
 
 // Initialize knex.
 
-export const driver = neo4j.driver("neo4j://n1ce.me:7687", neo4j.auth.basic("neo4j", "48904942q"), {});
+export const driver = neo4j.driver(
+	config.neo4j.host,
+	neo4j.auth.basic(config.neo4j.username, config.neo4j.password),
+	{}
+);
 
 const typeDefs = `
     type Server {
@@ -18,7 +22,7 @@ export const ogm = new OGM({
 	typeDefs,
 	driver,
 	config: {
-		driverConfig: { database: "hackerwars" },
+		driverConfig: { database: config.neo4j.database },
 	},
 });
 

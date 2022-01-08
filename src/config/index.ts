@@ -11,9 +11,9 @@ export default {
 	},
 
 	neo4j: {
-		database: process.env.NEO4J_DATABASE,
-		username: process.env.NEO4J_USERNAME,
-		password: process.env.NEO4J_PASSWORD,
-		host: process.env.NEO4J_HOST,
+		database: process.env.NEO4J_DATABASE || "neo4j",
+		username: process.env.NEO4J_USERNAME || "neo4j",
+		password: process.env.NEO4J_PASSWORD || "neo4j",
+		host: process.env.NEO4J_HOST || "neo4j://localhost:7687",
 	},
 };
