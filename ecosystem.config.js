@@ -1,11 +1,11 @@
 module.exports = {
   apps: [
     {
-      name: "[dev] Planning Server Reworked",
+      name: "[dev] HW Server",
       script: 'ts-node -r tsconfig-paths/register src/app.ts',
       env: {
         NODE_ENV: "dev",
-        PORT: 28721,
+        PORT: 15000,
       },
       watch: false
     },
