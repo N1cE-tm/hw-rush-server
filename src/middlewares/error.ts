@@ -5,7 +5,7 @@ export const error = async (err: Error, req: Request, res: Response, next: NextF
 	if (err instanceof ApiError) {
 		return res.status(err.status).json({ success: false, message: err.message, errors: err.errors });
 	} else {
-		// console.log(err);
+		console.log(err);
 	}
 	return res.status(500).json({ success: false, message: "Непредвиденная ошибка" });
 };
