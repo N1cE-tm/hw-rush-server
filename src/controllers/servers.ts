@@ -46,6 +46,8 @@ export const createNodes = async (req: Request, res: Response, next: NextFunctio
 			data: ids,
 		});
 	} catch (e) {
+		console.log(e);
+		
 		next(e);
 	}
 };
