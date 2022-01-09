@@ -31,6 +31,23 @@ export const getData = async (req: Request, res: Response, next: NextFunction) =
 	}
 };
 
+export const findByName = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const { query } = req.body;
+		const Server = ogm.model("Server");
+		const opperator = query.length > 2 ? `name_CONTAINS` : `name_ENDS_WITH`;
+
+		const list = await Server.find({ where: { [opperator]: query.toUpperCase() }, options: { limit: 10 } });
+
+		return res.json({
+			success: true,
+			data: list.map((node: any) => node.name),
+		});
+	} catch (e) {
+		next(e);
+	}
+};
+
 export const createNodes = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { ids } = req.body;
@@ -45,7 +62,7 @@ export const createNodes = async (req: Request, res: Response, next: NextFunctio
 			success: true,
 			data: ids,
 		});
-	} catch (e) {	
+	} catch (e) {
 		next(e);
 	}
 };

@@ -9,12 +9,14 @@ import {
 	setMain,
 	getWay,
 	clear,
+	findByName,
 	drop,
 } from "@/controllers/servers";
 
 const router = express.Router();
 
 router.get("/data", getData);
+router.post("/search", findByName);
 router.post("/way", getWay);
 router.post("/add", createNodes);
 router.post("/delete", deleteNodes);
