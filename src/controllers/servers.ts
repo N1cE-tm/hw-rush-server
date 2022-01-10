@@ -2,6 +2,8 @@ import type { NextFunction, Request, Response } from "express";
 import neo4j from "neo4j-driver";
 import { ogm, driver } from "@/services/neo4j";
 import { broadcast } from "@/ws/helper";
+import { query } from "@/models";
+import { ApiError } from "@/utils/errors";
 
 export const getData = async (req: Request, res: Response, next: NextFunction) => {
 	try {
@@ -242,33 +244,48 @@ export const setMain = async (req: Request, res: Response, next: NextFunction) =
 };
 
 export const getWay = async (req: Request, res: Response, next: NextFunction) => {
+	const session = driver.session({ database: "hackerwars", defaultAccessMode: neo4j.session.READ });
 	try {
-		const { from, to } = req.body;
-		const session = driver.session({ database: "hackerwars", defaultAccessMode: neo4j.session.READ });
+		if (req?.body?.length < 1 || !Array.isArray(req?.body)) throw new ApiError(200, "Bad payload");
 
-		const { records } = await session.run(
-			`MATCH (s1:Server {name: '${from}'}), (s2:Server {name: '${to}'}), p = shortestPath((s1)-[*]->(s2))  WHERE length(p) > 1 RETURN p`,
-			{},
-			{ timeout: 5000 }
-		);
-		session.close();
-
-		const path: any = [];
-
-		const result = records[0].get("p");
-		if (result?.segments?.length < 1) throw new Error("Путь не найден =(");
-		for (let item of result.segments) {
-			path.push({
-				from: item.start.properties.name,
-				to: item.end.properties.name,
-			});
+		const { records } = await session.run(query.findWay, { names: req.body }, { timeout: 5000 });
+		const paths = [];
+		for (let i = 0; i < records.length; i++) {
+			const [path, from, to] = records[i].values();
+			paths.push({ from, to, path: (path as any)?.map(({ properties }: any) => properties.name) || [] });
 		}
 
 		return res.json({
-			success: path.length > 1,
-			data: path,
+			success: !!paths.length,
+			data: paths,
 		});
 	} catch (e) {
 		next(e);
+	} finally {
+		await session.close();
+	}
+};
+
+export const getMainWays = async (req: Request, res: Response, next: NextFunction) => {
+	const session = driver.session({ database: "hackerwars", defaultAccessMode: neo4j.session.READ });
+	try {
+		const { from } = req.body;
+		if (from?.length !== 8) throw new ApiError(200, "Bad payload");
+
+		const { records } = await session.run(query.findWaysToMain, { from }, { timeout: 5000 });
+		const paths = [];
+		for (let i = 0; i < records.length; i++) {
+			const [path, from, to] = records[i].values();
+			paths.push({ from, to, path: (path as any)?.map(({ properties }: any) => properties.name) || [] });
+		}
+
+		return res.json({
+			success: !!paths.length,
+			data: paths,
+		});
+	} catch (e) {
+		next(e);
+	} finally {
+		await session.close();
 	}
 };

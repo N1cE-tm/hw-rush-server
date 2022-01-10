@@ -8,6 +8,7 @@ import {
 	disconnectNodes,
 	setMain,
 	getWay,
+	getMainWays,
 	clear,
 	findByName,
 	drop,
@@ -18,6 +19,7 @@ const router = express.Router();
 router.get("/data", getData);
 router.post("/search", findByName);
 router.post("/way", getWay);
+router.post("/way/main", getMainWays);
 router.post("/add", createNodes);
 router.post("/delete", deleteNodes);
 router.post("/connect", connectNodes);
