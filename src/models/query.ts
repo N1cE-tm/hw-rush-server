@@ -4,6 +4,7 @@ WITH collect(t) as NS
 
 UNWIND RANGE(0, size(NS)-2) as i1
   WITH NS[i1] as _from,  NS[i1 + 1] as _to
+  WHERE _from<>_to
   MATCH p = shortestPath((_from:Server)-[*..20]->(_to:Server))
 RETURN NODES(p) as path, _from.name as from, _to.name as to
 `;

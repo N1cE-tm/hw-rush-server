@@ -246,19 +246,31 @@ export const setMain = async (req: Request, res: Response, next: NextFunction) =
 export const getWay = async (req: Request, res: Response, next: NextFunction) => {
 	const session = driver.session({ database: "hackerwars", defaultAccessMode: neo4j.session.READ });
 	try {
-		if (req?.body?.length < 1 || !Array.isArray(req?.body)) throw new ApiError(200, "Bad payload");
+		const names = req?.body || [];
+		if (!Array.isArray(names) || names.length < 2) throw new ApiError(200, "Bad payload");
 
-		const { records } = await session.run(query.findWay, { names: req.body }, { timeout: 5000 });
+		const { records } = await session.run(query.findWay, { names }, { timeout: 5000 });
+		if (records?.length !== names.length - 1) throw new ApiError(200, "No Way");
+
 		const paths = [];
-		for (let i = 0; i < records.length; i++) {
-			const [path, from, to] = records[i].values();
-			paths.push({ from, to, path: (path as any)?.map(({ properties }: any) => properties.name) || [] });
+		let cost = 0;
+		for (let record of records) {
+			const [path, from, to] = record.values();
+			const p = (path as any)?.map(({ properties }: any) => properties.name);
+			const c = p.length - 1;
+
+			paths.push({ from, to, cost: c, path: p });
+			cost += c;
 		}
 
-		return res.json({
-			success: !!paths.length,
-			data: paths,
-		});
+		const data = {
+			from: names.at(0),
+			to: names.at(-1),
+			cost,
+			paths,
+		};
+
+		return res.json({ success: true, data });
 	} catch (e) {
 		next(e);
 	} finally {
