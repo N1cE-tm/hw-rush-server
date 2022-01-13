@@ -2,14 +2,11 @@ import type { Request } from "express";
 import type { WebSocket } from "@/ws/types";
 import express from "express";
 import expressWs from "express-ws";
-// import helmet from "helmet";
 import cors from "cors";
 import config from "@/config";
 import routes from "@/routes";
 import { wsHandler } from "@/ws";
 import { error } from "@/middlewares/error";
-
-// const multer = require('multer');
 
 const { app, getWss } = expressWs(express(), undefined, { wsOptions: { clientTracking: true } });
 
@@ -19,7 +16,6 @@ export const wss = getWss();
  * Security
  */
 app.use(cors());
-// app.use(helmet());
 
 /**
  * Request middleware's

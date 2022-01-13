@@ -1,29 +1,20 @@
 import config from "@/config";
-import { OGM } from "@neo4j/graphql-ogm";
-import neo4j from "neo4j-driver";
+import Neode from "neode";
+import models from "@/models";
 
-// Initialize knex.
-
-export const driver = neo4j.driver(
+export const ogm = new Neode(
 	config.neo4j.host,
-	neo4j.auth.basic(config.neo4j.username, config.neo4j.password),
-	{}
-);
+	config.neo4j.username,
+	config.neo4j.password,
+	true,
+	config.neo4j.database
+).with(models);
 
-const typeDefs = `
-    type Server {
-        name: String @unique
-        is_main: Boolean
-        edges: [Server] @relationship(type: "MOVE_TO", direction: OUT)
-    }
-`;
-
-export const ogm = new OGM({
-	typeDefs,
-	driver,
-	config: {
-		driverConfig: { database: config.neo4j.database },
-	},
-});
-
-export const connect = async () => {};
+export const connect = async () => {
+	try {
+		await ogm.cypher(`RETURN 1 + 1`, {});
+		console.log("DB: Connected");
+	} catch (e) {
+		console.log("No DB connection!");
+	}
+};

@@ -1,6 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import neo4j from "neo4j-driver";
-import { ogm, driver } from "@/services/neo4j";
+import { ogm } from "@/services/neo4j";
 import { broadcast } from "@/ws/helper";
 import { query } from "@/models";
 import { ApiError } from "@/utils/errors";
@@ -9,16 +8,20 @@ export const getData = async (req: Request, res: Response, next: NextFunction) =
 	try {
 		const Server = ogm.model("Server");
 
-		const list = await Server.find({ selectionSet: `{ name is_main edges { name is_main } }` });
+		const collection = await Server.all();
 
-		const nodes = [];
-		const edges = [];
-		const main = [];
+		const nodes: any = [];
+		const edges: any = [];
+		const main: any = [];
+
+		const list: any = await collection.toJson();
+
 		for (let node of list) {
 			if (node.is_main) main.push(node.name);
 			nodes.push(node.name);
 			if (node?.edges?.length > 0) {
-				for (let edge of node.edges) {
+				for (let relation of node.edges) {
+					const edge = relation.node;
 					edges.push({ from: node.name, to: edge.name, main: edge.is_main });
 				}
 			}
@@ -35,15 +38,21 @@ export const getData = async (req: Request, res: Response, next: NextFunction) =
 
 export const findByName = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const { query } = req.body;
-		const Server = ogm.model("Server");
-		const opperator = query.length > 2 ? `name_CONTAINS` : `name_ENDS_WITH`;
+		const { query: q } = req.body;
+		// const Server = ogm.model("Server");
+		// const opperator = query.length > 2 ? `name_CONTAINS` : `name_ENDS_WITH`;
+		// const list = await Server.find({ where: { [opperator]: query.toUpperCase() }, options: { limit: 10 } });
+		const { records } = await ogm.cypher(query.search, { query: q });
+		const data: any = [];
 
-		const list = await Server.find({ where: { [opperator]: query.toUpperCase() }, options: { limit: 10 } });
+		for (let record of records) {
+			const [name] = record.values();
+			data.push(name);
+		}
 
 		return res.json({
 			success: true,
-			data: list.map((node: any) => node.name),
+			data,
 		});
 	} catch (e) {
 		next(e);
@@ -56,7 +65,9 @@ export const createNodes = async (req: Request, res: Response, next: NextFunctio
 
 		const Server = ogm.model("Server");
 
-		await Server.create({ input: ids.map((id: string) => ({ name: id })) });
+		await Promise.all(
+			ids.map((id: string) => Server.mergeOn({ name: id }, { name: id }).then((node) => node.toJson()))
+		);
 
 		broadcast((client) => client.json("nodes/add", { nodes: ids }));
 
@@ -73,9 +84,7 @@ export const deleteNodes = async (req: Request, res: Response, next: NextFunctio
 	try {
 		const { ids } = req.body;
 
-		const Server = ogm.model("Server");
-
-		await Server.delete({ where: { name_IN: ids } });
+		await ogm.writeCypher(query.remove, { ids });
 
 		broadcast((client) => client.json("nodes/remove", { nodes: ids }));
 
@@ -91,33 +100,15 @@ export const deleteNodes = async (req: Request, res: Response, next: NextFunctio
 export const connectNodes = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { from, to } = req.body;
+		if (from.length < 1 || to.length < 1) throw new ApiError(200, "Wrong body");
 
-		if (from.length < 1 || to.length < 1) throw new Error("Wrong body");
+		const list = to.split(",").map((to: string) => ({ from: from.trim(), to: to.trim() }));
 
-		const Server = ogm.model("Server");
+		await ogm.writeCypher(query.update, { list });
 
-		const [server] = await Server.find({ where: { name: from } });
-		if (!server) {
-			await Server.create({ input: { name: from } });
-		}
+		broadcast((client) => client.json("edges/add", { edges: list }));
 
-		const data = await Server.update({
-			where: { name: from },
-			connectOrCreate: {
-				edges: to.split(",").map((to: string) => ({
-					where: { node: { name: to.trim() } },
-					onCreate: { node: { name: to.trim() } },
-				})),
-			},
-		});
-
-		broadcast((client) => client.json("edges/add", { edges: to.split(",").map((to: string) => ({ from, to })) }));
-
-		return res.json({
-			success: true,
-			// servers,
-			data,
-		});
+		return res.json({ success: true, data: list });
 	} catch (e) {
 		next(e);
 	}
@@ -128,30 +119,13 @@ export const connectNodesBigdata = async (req: Request, res: Response, next: Nex
 		const { bigdata } = req.body;
 
 		const relation = JSON.parse(bigdata.replaceAll(`'`, `"`).replaceAll(`(`, `[`).replaceAll(`)`, `]`));
-		const list: any = [];
-		const Server = ogm.model("Server");
+		const list = Object.entries(relation).flatMap(([from, [_, to]]: any) => to.map((to: string) => ({ from, to })));
 
-		for (let [node, rel] of Object.entries<any>(relation)) {
-			await Server.update({
-				where: { name: node },
-				connectOrCreate: {
-					edges: rel[1].map((to: string) => {
-						list.push({ from: node.trim(), to: to.trim() });
-						return {
-							where: { node: { name: to.trim() } },
-							onCreate: { node: { name: to.trim() } },
-						};
-					}),
-				},
-			});
-		}
+		await ogm.writeCypher(query.update, { list });
 
 		broadcast((client) => client.json("edges/add", { edges: list }));
 
-		return res.json({
-			success: true,
-			data: list,
-		});
+		return res.json({ success: true, data: list });
 	} catch (e) {
 		next(e);
 	}
@@ -159,20 +133,11 @@ export const connectNodesBigdata = async (req: Request, res: Response, next: Nex
 
 export const clear = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const Server = ogm.model("Server");
-
-		const data = await Server.update({
-			where: { name_NOT: null },
-			disconnect: { edges: { where: { node: { name_NOT: null } } } },
-			update: { is_main: false },
-		});
+		const data = await ogm.writeCypher(query.clear, {});
 
 		broadcast((client) => client.json("clear", {}));
 
-		return res.json({
-			success: true,
-			data,
-		});
+		return res.json({ success: true, data: data.summary.counters });
 	} catch (e) {
 		next(e);
 	}
@@ -180,21 +145,17 @@ export const clear = async (req: Request, res: Response, next: NextFunction) => 
 
 export const drop = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const Server = ogm.model("Server");
-
-		const data = await Server.delete();
+		const data = await ogm.writeCypher(query.drop, {});
 
 		broadcast((client) => client.json("clear", {}));
 
-		return res.json({
-			success: true,
-			data,
-		});
+		return res.json({ success: true, data: data.summary.counters });
 	} catch (e) {
 		next(e);
 	}
 };
 
+// Need rewrite
 export const disconnectNodes = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { from, to } = req.body;
@@ -202,15 +163,16 @@ export const disconnectNodes = async (req: Request, res: Response, next: NextFun
 		if (from.length < 1 || to.length < 1) throw new Error("Wrong body");
 
 		const Server = ogm.model("Server");
+		const data: any = [];
 
-		const data = await Server.update({
-			where: { name: from },
-			disconnect: {
-				edges: to.split(",").map((to: string) => ({
-					where: { node: { name: to.trim() } },
-				})),
-			},
-		});
+		// const data = await Server.update({
+		// 	where: { name: from },
+		// 	disconnect: {
+		// 		edges: to.split(",").map((to: string) => ({
+		// 			where: { node: { name: to.trim() } },
+		// 		})),
+		// 	},
+		// });
 
 		broadcast((client) =>
 			client.json("edges/remove", { edges: to.split(",").map((to: string) => ({ from, to })) })
@@ -231,21 +193,13 @@ export const setMain = async (req: Request, res: Response, next: NextFunction) =
 
 		if (list.length < 1) throw new Error("Wrong body");
 
-		const Server = ogm.model("Server");
+		const servers = list
+			.replaceAll("📟", ",")
+			.trim()
+			.split(",")
+			.filter((i: any) => i.length > 0);
 
-		const servers = list.replaceAll("📟", ",").trim().split(",");
-
-		for (let server of servers) {
-			if (server.length > 0) {
-				const [s] = await Server.find({ where: { name: server } });
-				if (!s) {
-					await Server.create({ input: { name: server } });
-				}
-			}
-		}
-
-		await Server.update({ where: { is_main: true }, update: { is_main: false } });
-		await Server.update({ where: { name_IN: servers }, update: { is_main: true } });
+		await ogm.writeCypher(query.setMain, { list: servers });
 
 		broadcast((client) => client.json("nodes/main", { main: servers }));
 
@@ -259,12 +213,12 @@ export const setMain = async (req: Request, res: Response, next: NextFunction) =
 };
 
 export const getWay = async (req: Request, res: Response, next: NextFunction) => {
-	const session = driver.session({ database: "hackerwars", defaultAccessMode: neo4j.session.READ });
 	try {
 		const names = req?.body || [];
 		if (!Array.isArray(names) || names.length < 2) throw new ApiError(200, "Bad payload");
 
-		const { records } = await session.run(query.findWay, { names }, { timeout: 5000 });
+		const { records } = await ogm.cypher(query.findWay, { names });
+
 		if (records?.length !== names.length - 1) throw new ApiError(200, "No Way");
 
 		const paths = [];
@@ -288,22 +242,24 @@ export const getWay = async (req: Request, res: Response, next: NextFunction) =>
 		return res.json({ success: true, data });
 	} catch (e) {
 		next(e);
-	} finally {
-		await session.close();
 	}
 };
 
 export const getMainWays = async (req: Request, res: Response, next: NextFunction) => {
-	const session = driver.session({ database: "hackerwars", defaultAccessMode: neo4j.session.READ });
 	try {
 		const { from } = req.body;
 		if (from?.length !== 8) throw new ApiError(200, "Bad payload");
 
-		const { records } = await session.run(query.findWaysToMain, { from }, { timeout: 5000 });
+		const { records } = await ogm.cypher(query.findWaysToMain, { from });
 		const paths = [];
-		for (let i = 0; i < records.length; i++) {
-			const [path, from, to] = records[i].values();
-			paths.push({ from, to, path: (path as any)?.map(({ properties }: any) => properties.name) || [] });
+		for (let record of records) {
+			const [path, from, to] = record.values();
+			paths.push({
+				from,
+				to,
+				path: (path as any)?.map(({ properties }: any) => properties.name) || [],
+				cost: (path as any).length - 1,
+			});
 		}
 
 		return res.json({
@@ -312,7 +268,5 @@ export const getMainWays = async (req: Request, res: Response, next: NextFunctio
 		});
 	} catch (e) {
 		next(e);
-	} finally {
-		await session.close();
 	}
 };

@@ -7,5 +7,5 @@ export const error = async (err: Error, req: Request, res: Response, next: NextF
 	} else {
 		console.log(err);
 	}
-	return res.status(500).json({ success: false, message: "Непредвиденная ошибка" });
+	return res.status(200).json({ success: false, message: "Непредвиденная ошибка" });
 };
