@@ -96,6 +96,11 @@ export const connectNodes = async (req: Request, res: Response, next: NextFuncti
 
 		const Server = ogm.model("Server");
 
+		const [server] = await Server.find({ where: { name: from } });
+		if (!server) {
+			await Server.create({ input: { name: from } });
+		}
+
 		const data = await Server.update({
 			where: { name: from },
 			connectOrCreate: {
@@ -110,6 +115,7 @@ export const connectNodes = async (req: Request, res: Response, next: NextFuncti
 
 		return res.json({
 			success: true,
+			// servers,
 			data,
 		});
 	} catch (e) {
@@ -228,6 +234,15 @@ export const setMain = async (req: Request, res: Response, next: NextFunction) =
 		const Server = ogm.model("Server");
 
 		const servers = list.replaceAll("📟", ",").trim().split(",");
+
+		for (let server of servers) {
+			if (server.length > 0) {
+				const [s] = await Server.find({ where: { name: server } });
+				if (!s) {
+					await Server.create({ input: { name: server } });
+				}
+			}
+		}
 
 		await Server.update({ where: { is_main: true }, update: { is_main: false } });
 		await Server.update({ where: { name_IN: servers }, update: { is_main: true } });
