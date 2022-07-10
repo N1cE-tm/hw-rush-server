@@ -7,6 +7,10 @@ export const schema: SchemaObject = {
 		// indexed: true,
 		required: true,
 	},
+	fraction: {
+		type: "string",
+		// indexed: true,
+	},
 	is_main: {
 		type: "boolean",
 		default: false,
@@ -16,6 +20,17 @@ export const schema: SchemaObject = {
 		target: "Server",
 		direction: "out",
 		relationship: "MOVE_TO",
+		cascade: "detach",
+		// properties: {
+		//     recived_at: "string"
+		// },
+		eager: true,
+	},
+	files: {
+		type: "relationships",
+		target: "File",
+		direction: "out",
+		relationship: "HAS_FILE",
 		cascade: "detach",
 		// properties: {
 		//     recived_at: "string"

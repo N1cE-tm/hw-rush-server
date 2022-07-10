@@ -12,25 +12,50 @@ export const getData = async (req: Request, res: Response, next: NextFunction) =
 
 		const nodes: any = [];
 		const edges: any = [];
-		const main: any = [];
+		const files: any = {};
+		const main: any = {};
+		const start: any = ["01F8A000", "01F8A001", "01F8A002", "01F8A003"];
 
 		const list: any = await collection.toJson();
 
 		for (let node of list) {
-			if (node.is_main) main.push(node.name);
+			if (node.fraction) main[node.name] = node.fraction;
+			// if (node.has_file) files.push(node.name);
 			nodes.push(node.name);
 			if (node?.edges?.length > 0) {
 				for (let relation of node.edges) {
 					const edge = relation.node;
-					edges.push({ from: node.name, to: edge.name, main: edge.is_main });
+					edges.push({ from: node.name, to: edge.name, main: !!edge.fraction });
+				}
+			}
+
+			if (node?.files?.length > 0) {
+				if (!files[node.name]) files[node.name] = [];
+				for (let relation of node.files) {
+					const file = relation.node;
+					files[node.name].push(file.name);
 				}
 			}
 		}
 
 		return res.json({
 			success: true,
-			data: { main, nodes, edges },
+			data: { start, main, files, nodes, edges },
 		});
+	} catch (e) {
+		next(e);
+	}
+};
+
+export const addFile = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const { server, files } = req.body;
+
+		await ogm.writeCypher(query.setFile, { server, files });
+
+		broadcast((client) => client.json("files/add", { server, files }));
+
+		return res.json({ success: true });
 	} catch (e) {
 		next(e);
 	}
@@ -66,7 +91,7 @@ export const createNodes = async (req: Request, res: Response, next: NextFunctio
 		const Server = ogm.model("Server");
 
 		await Promise.all(
-			ids.map((id: string) => Server.mergeOn({ name: id }, { name: id }).then((node) => node.toJson()))
+			ids.map((id: string) => Server.mergeOn({ name: id }, { name: id }).then((node: any) => node.toJson()))
 		);
 
 		broadcast((client) => client.json("nodes/add", { nodes: ids }));
@@ -143,6 +168,18 @@ export const clear = async (req: Request, res: Response, next: NextFunction) => 
 	}
 };
 
+export const clearFiles = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const data = await ogm.writeCypher(query.clearFiles, {});
+
+		broadcast((client) => client.json("clear", {}));
+
+		return res.json({ success: true, data: data.summary.counters });
+	} catch (e) {
+		next(e);
+	}
+};
+
 export const drop = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const data = await ogm.writeCypher(query.drop, {});
@@ -189,15 +226,11 @@ export const disconnectNodes = async (req: Request, res: Response, next: NextFun
 
 export const setMain = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const { list } = req.body;
+		const json = req.body;
 
-		if (list.length < 1) throw new Error("Wrong body");
+		if (Object.keys(json).length < 1) throw new Error("Wrong body");
 
-		const servers = list
-			.replaceAll("📟", ",")
-			.trim()
-			.split(",")
-			.filter((i: any) => i.length > 0);
+		const servers = Object.keys(json).map((name) => ({ name, fraction: json[name] }));
 
 		await ogm.writeCypher(query.setMain, { list: servers });
 

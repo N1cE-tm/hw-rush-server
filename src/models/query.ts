@@ -18,13 +18,21 @@ return nodes(p) as path, from, b.name as to
 
 export const remove = `MATCH (s:Server) WHERE (s.name IN $ids) DETACH DELETE s`;
 
-export const clear = `MATCH (s:Server) OPTIONAL MATCH (s:Server)-[r]-() SET s.is_main = false DELETE r`;
+export const clear = `MATCH (s:Server) OPTIONAL MATCH (s:Server)-[r]-() SET s.fraction = false DELETE r`;
+
+export const clearFiles = `MATCH (s:Server) OPTIONAL MATCH (s:Server)-[r:HAS_FILE]-(f:File) DELETE r,f`;
 
 export const drop = `MATCH (s:Server) DETACH DELETE s`;
 
 export const search = `MATCH (s:Server) WHERE s.name ENDS WITH $query RETURN s.name AS name LIMIT 10 `;
 
-export const setMain = `UNWIND $list AS name MERGE (s:Server { name: name })  SET s.is_main = true RETURN s`;
+export const setFile = `UNWIND $files AS file 
+MERGE (s:Server { name: $server }) 
+MERGE (f:File { name: file }) 
+MERGE (s)-[r:HAS_FILE]->(f) 
+RETURN count(file)`;
+
+export const setMain = `UNWIND $list AS i MERGE (s:Server { name: i.name }) SET s.fraction = i.fraction RETURN s`;
 
 export const update = `
 UNWIND $list AS item 

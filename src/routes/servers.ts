@@ -12,6 +12,8 @@ import {
 	clear,
 	findByName,
 	drop,
+	addFile,
+	clearFiles,
 } from "@/controllers/servers";
 
 const router = express.Router();
@@ -19,6 +21,7 @@ const router = express.Router();
 router.get("/data", getData);
 router.post("/search", findByName);
 router.post("/way", getWay);
+router.post("/file", addFile);
 router.post("/way/main", getMainWays);
 router.post("/add", createNodes);
 router.post("/delete", deleteNodes);
@@ -28,5 +31,6 @@ router.post("/disconnect", disconnectNodes);
 router.post("/main", setMain);
 router.delete("/clear", clear);
 router.delete("/drop", drop);
+router.delete("/files", clearFiles);
 
 export default router;
