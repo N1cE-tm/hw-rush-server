@@ -67,7 +67,7 @@ export const findByName = async (req: Request, res: Response, next: NextFunction
 		// const Server = ogm.model("Server");
 		// const opperator = query.length > 2 ? `name_CONTAINS` : `name_ENDS_WITH`;
 		// const list = await Server.find({ where: { [opperator]: query.toUpperCase() }, options: { limit: 10 } });
-		const { records } = await ogm.cypher(query.search, { query: q });
+		const { records } = await ogm.cypher(query.search, { query: q.toUpperCase() });
 		const data: any = [];
 
 		for (let record of records) {
