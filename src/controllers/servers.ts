@@ -15,7 +15,7 @@ export const getData = async (req: Request, res: Response, next: NextFunction) =
 		const files: any = {};
 		const npc: any = {};
 		const main: any = {};
-		const start: any = ["01F8A000", "01F8A001", "01F8A002", "01F8A003"];
+		const start: any = ["1570B800", "1570B801", "1570B802", "1570B803"];
 
 		const list: any = await collection.toJson();
 
