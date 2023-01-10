@@ -13,6 +13,7 @@ export const getData = async (req: Request, res: Response, next: NextFunction) =
 		const nodes: any = [];
 		const edges: any = [];
 		const files: any = {};
+		const npc: any = {};
 		const main: any = {};
 		const start: any = ["01F8A000", "01F8A001", "01F8A002", "01F8A003"];
 
@@ -33,14 +34,22 @@ export const getData = async (req: Request, res: Response, next: NextFunction) =
 				if (!files[node.name]) files[node.name] = [];
 				for (let relation of node.files) {
 					const file = relation.node;
-					files[node.name].push(file.name);
+					files[node.name].push({ name: file.name, type: file.type });
+				}
+			}
+
+			if (node?.npc?.length > 0) {
+				if (!npc[node.name]) npc[node.name] = [];
+				for (let relation of node.npc) {
+					const _npc = relation.node;
+					npc[node.name].push({ name: _npc.name, type: _npc.type });
 				}
 			}
 		}
 
 		return res.json({
 			success: true,
-			data: { start, main, files, nodes, edges },
+			data: { start, main, files, nodes, edges, npc },
 		});
 	} catch (e) {
 		next(e);

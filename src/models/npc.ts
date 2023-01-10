@@ -14,7 +14,7 @@ export const schema: SchemaObject = {
 		type: "relationship",
 		target: "Server",
 		direction: "in",
-		relationship: "HAS_FILE",
+		relationship: "HAS_NPC",
 		cascade: "detach",
 		// properties: {
 		//     recived_at: "string"

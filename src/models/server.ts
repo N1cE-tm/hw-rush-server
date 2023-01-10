@@ -37,4 +37,15 @@ export const schema: SchemaObject = {
 		// },
 		eager: true,
 	},
+	npc: {
+		type: "relationships",
+		target: "Npc",
+		direction: "out",
+		relationship: "HAS_NPC",
+		cascade: "detach",
+		// properties: {
+		//     recived_at: "string"
+		// },
+		eager: true,
+	},
 };
