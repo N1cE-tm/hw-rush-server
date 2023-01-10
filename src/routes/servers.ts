@@ -15,6 +15,7 @@ import {
 	addFile,
 	clearFiles,
 } from "@/controllers/servers";
+import { setData } from "@/controllers/integrations";
 
 const router = express.Router();
 
@@ -32,5 +33,7 @@ router.post("/main", setMain);
 router.delete("/clear", clear);
 router.delete("/drop", drop);
 router.delete("/files", clearFiles);
+
+router.post("/bot", setData);
 
 export default router;

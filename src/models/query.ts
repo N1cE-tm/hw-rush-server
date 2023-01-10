@@ -41,3 +41,29 @@ MERGE (m:Server { name: item.to })
 MERGE (n)-[r:MOVE_TO]->(m) 
 RETURN count(item)
 `;
+
+export const botFiles = `
+UNWIND $list AS item 
+OPTIONAL MATCH ()-[r:HAS_NPC]->(:File { name: item.name, type: item.type }) DELETE r
+MERGE (s:Server { name: $server }) 
+MERGE (f:File { name: item.name, type: item.type }) 
+MERGE (s)-[nr:HAS_FILE]->(f) 
+RETURN count(item)
+`;
+
+export const botEdges = `
+UNWIND $list AS item 
+MERGE (n:Server { name: $server }) 
+MERGE (m:Server { name: item }) 
+MERGE (n)-[r:MOVE_TO]->(m) 
+RETURN count(item)
+`;
+
+export const botNPC = `
+UNWIND $list AS item 
+OPTIONAL MATCH ()-[r:HAS_NPC]->(:Npc { name: item.name, type: item.type }) DELETE r
+MERGE (s:Server { name: $server }) 
+MERGE (f:Npc { name: item.name, type: item.type }) 
+MERGE (s)-[nr:HAS_NPC]->(f) 
+RETURN count(item)
+`;
