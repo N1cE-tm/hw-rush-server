@@ -41,10 +41,10 @@ MERGE (m:Server { name: item.to })
 MERGE (n)-[r:MOVE_TO]->(m) 
 RETURN count(item)
 `;
+//OPTIONAL MATCH ()-[r:HAS_NPC]->(:File { name: item.name, type: item.type }) DELETE r
 
 export const botFiles = `
 UNWIND $list AS item 
-OPTIONAL MATCH ()-[r:HAS_NPC]->(:File { name: item.name, type: item.type }) DELETE r
 MERGE (s:Server { name: $server }) 
 MERGE (f:File { name: item.name, type: item.type }) 
 MERGE (s)-[nr:HAS_FILE]->(f) 
