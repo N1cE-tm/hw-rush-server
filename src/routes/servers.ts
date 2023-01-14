@@ -14,6 +14,8 @@ import {
 	drop,
 	addFile,
 	clearFiles,
+	getServer,
+	connectNodesBig,
 } from "@/controllers/servers";
 import { setData } from "@/controllers/integrations";
 
@@ -28,6 +30,7 @@ router.post("/add", createNodes);
 router.post("/delete", deleteNodes);
 router.post("/connect", connectNodes);
 router.post("/bigdata", connectNodesBigdata);
+router.post("/big", connectNodesBig);
 router.post("/disconnect", disconnectNodes);
 router.post("/main", setMain);
 router.delete("/clear", clear);
@@ -35,5 +38,6 @@ router.delete("/drop", drop);
 router.delete("/files", clearFiles);
 
 router.post("/bot", setData);
+router.get("/server/:server", getServer);
 
 export default router;

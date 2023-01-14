@@ -7,6 +7,10 @@ export const schema: SchemaObject = {
 		// indexed: true,
 		required: true,
 	},
+	type: {
+		type: "string",
+		// indexed: true,
+	},
 	fraction: {
 		type: "string",
 		// indexed: true,

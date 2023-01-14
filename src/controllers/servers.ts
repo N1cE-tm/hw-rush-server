@@ -148,6 +148,27 @@ export const connectNodes = async (req: Request, res: Response, next: NextFuncti
 	}
 };
 
+export const connectNodesBig = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const data = req.body;
+
+		// if (from.length < 1 || to.length < 1) throw new ApiError(200, "Wrong body");
+		let count = 0;
+		for (let { from, to } of data) {
+			const list = to.map((to: string) => ({ from: from.trim(), to: to.trim() }));
+
+			await ogm.writeCypher(query.update, { list });
+			count++;
+
+			broadcast((client) => client.json("edges/add", { edges: list }));
+		}
+
+		return res.json({ success: true, data: count });
+	} catch (e) {
+		next(e);
+	}
+};
+
 export const connectNodesBigdata = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { bigdata } = req.body;
@@ -307,6 +328,51 @@ export const getMainWays = async (req: Request, res: Response, next: NextFunctio
 		return res.json({
 			success: !!paths.length,
 			data: paths,
+		});
+	} catch (e) {
+		next(e);
+	}
+};
+
+export const getServer = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const { server } = req.params;
+
+		// const { records: _inner } = await ogm.cypher(query.innerByServer, { server });
+		// const { records: _outer } = await ogm.cypher(query.outerByServer, { server });
+		const { records: _files } = await ogm.cypher(query.filesByServer, { server });
+		const { records: _npc } = await ogm.cypher(query.npcByServer, { server });
+
+		// const inner: string[] = [];
+		// const outer: string[] = [];
+		const files: any = [];
+		const npc: any = [];
+
+		// for (let record of _inner) {
+		// 	const [name] = record.values();
+		// 	inner.push(name as string);
+		// }
+
+		// for (let record of _outer) {
+		// 	const [name] = record.values();
+		// 	outer.push(name as string);
+		// }
+
+		for (let record of _files) {
+			const [name, type, server, path] = record.values();
+			files.push({ name, type, server, path });
+		}
+		for (let record of _npc) {
+			const [name, type, server, path] = record.values();
+			npc.push({ name, type, server, path });
+		}
+
+		// for (let node of records) {
+		// }
+
+		return res.json({
+			success: true,
+			data: { files, npc },
 		});
 	} catch (e) {
 		next(e);

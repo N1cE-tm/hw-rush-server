@@ -67,3 +67,25 @@ MERGE (f:Npc { name: item.name, type: item.type })
 MERGE (s)-[nr:HAS_NPC]->(f) 
 RETURN count(item)
 `;
+
+export const getEdges = `MATCH (f:Server)-[r:MOVE_TO]->(t:Server) WITH f.name as from, t.name as to, r RETURN from, to`;
+export const getFiles = `MATCH (f:File)<-[r:HAS_FILE]-(s:Server) WITH s.name as server, f.name as name, f.type as type RETURN name, type, server`;
+export const innerByServer = `MATCH (s:Server { name: $server })-[:MOVE_TO]->(inner:Server) RETURN inner.name as name`;
+export const outerByServer = `MATCH (s:Server { name: $server })<-[:MOVE_TO]-(inner:Server) RETURN inner.name as name`;
+export const npcByServer = `
+MATCH (s:Server { name: $server }) 
+    OPTIONAL MATCH (fs:Server)-[:HAS_NPC]->(n:Npc)
+    OPTIONAL MATCH p = shortestPath((s)-[:MOVE_TO*1..20]->(fs)) 
+    WHERE s <> fs
+WITH n.name as name, n.type as type, s.name as server, [node in nodes(p)|node.name] as path
+RETURN name, type, server, path
+`;
+
+export const filesByServer = `
+MATCH (s:Server { name: $server }) 
+    OPTIONAL MATCH (fs:Server)-[:HAS_FILE]->(f:File)
+    OPTIONAL MATCH p = shortestPath((s)-[:MOVE_TO*1..20]->(fs)) 
+    WHERE s <> fs
+WITH f.name as name, f.type as type, s.name as server, [node in nodes(p)|node.name] as path
+RETURN name, type, server, path
+`;
