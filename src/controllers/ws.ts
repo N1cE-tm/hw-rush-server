@@ -56,3 +56,20 @@ export const getFiles = async (_: any, ws: ClientSocket) => {
 		return ws.json("error", `[data/files] ${e.message}`);
 	}
 };
+
+export const getNpc = async (_: any, ws: ClientSocket) => {
+	try {
+		const result = [];
+
+		const { records } = await ogm.cypher(query.getNpc, {});
+
+		for (let record of records) {
+			const [name, type, server] = record.values();
+			result.push({ name, type, server });
+		}
+
+		return ws.json("data/npc", result);
+	} catch (e: any) {
+		return ws.json("error", `[data/npc] ${e.message}`);
+	}
+};
