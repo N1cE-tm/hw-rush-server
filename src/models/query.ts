@@ -18,7 +18,7 @@ return nodes(p) as path, from, b.name as to
 
 export const remove = `MATCH (s:Server) WHERE (s.name IN $ids) DETACH DELETE s`;
 
-export const clear = `MATCH (s:Server) OPTIONAL MATCH (s:Server)-[r]-() SET s.fraction = false DELETE r`;
+export const clear = `MATCH (s:Server) OPTIONAL MATCH (s:Server)-[r]-(:Server) SET s.fraction = false DELETE r`;
 
 export const clearFiles = `MATCH (s:Server) OPTIONAL MATCH (s:Server)-[r:HAS_FILE]-(f:File) DELETE r,f`;
 
@@ -70,6 +70,7 @@ RETURN count(item)
 
 export const getEdges = `MATCH (f:Server)-[r:MOVE_TO]->(t:Server) WITH f.name as from, t.name as to, r RETURN from, to`;
 export const getFiles = `MATCH (f:File)<-[r:HAS_FILE]-(s:Server) WITH s.name as server, f.name as name, f.type as type RETURN name, type, server`;
+export const getNpc = `MATCH (n:Npc)<-[:HAS_NPC]-(s:Server) WITH s.name as server, n.name as name, n.type as type RETURN name, type, server`;
 export const innerByServer = `MATCH (s:Server { name: $server })-[:MOVE_TO]->(inner:Server) RETURN inner.name as name`;
 export const outerByServer = `MATCH (s:Server { name: $server })<-[:MOVE_TO]-(inner:Server) RETURN inner.name as name`;
 export const npcByServer = `
