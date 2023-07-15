@@ -43,6 +43,13 @@ RETURN count(item)
 `;
 //OPTIONAL MATCH ()-[r:HAS_NPC]->(:File { name: item.name, type: item.type }) DELETE r
 
+export const botSubnet = `
+MERGE (g:Subnet { name: $name }) 
+MERGE (s:Server { name: $server }) 
+MERGE (g)-[nr:HAS_SERVER]->(s) 
+RETURN count(nr)
+`;
+
 export const botFiles = `
 UNWIND $list AS item 
 MERGE (s:Server { name: $server }) 

@@ -52,4 +52,15 @@ export const schema: SchemaObject = {
 		// },
 		eager: true,
 	},
+	subnet: {
+		type: "relationships",
+		target: "Subnet",
+		direction: "in",
+		relationship: "HAS_SERVER",
+		cascade: "detach",
+		// properties: {
+		//     recived_at: "string"
+		// },
+		eager: true,
+	},
 };

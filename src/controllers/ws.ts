@@ -2,6 +2,35 @@ import type { ClientSocket } from "@/ws/types";
 import { ogm } from "@/services/neo4j";
 import { query } from "@/models";
 
+export const getSubnet = async (_: any, ws: ClientSocket) => {
+	try {
+		const Subnet = ogm.model("Subnet");
+		const list: any = await Subnet.all().then((c) => c.toJson());
+
+		const result = [];
+
+		for (let node of list) {
+			result.push({
+				name: node.name,
+			});
+		}
+
+		return ws.json("data/subnets", result);
+	} catch (e: any) {
+		return ws.json("error", `[data/subnets] ${e.message}`);
+	}
+};
+
+export const switchSubnet = async (data: any, ws: ClientSocket) => {
+	try {
+		ws.subnet = data.subnet;
+
+		return ws.json("data/subnets/switch", data.subnet);
+	} catch (e: any) {
+		return ws.json("error", `[data/subnets/switch] ${e.message}`);
+	}
+};
+
 export const getServers = async (_: any, ws: ClientSocket) => {
 	try {
 		const Server = ogm.model("Server");

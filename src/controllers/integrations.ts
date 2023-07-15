@@ -16,7 +16,7 @@ export const setData = async (req: Request, res: Response, next: NextFunction) =
 		// 		{ "name": "NPCName", "type": "boss" }
 		// 	]
 		// }
-		
+
 		const payload = req.body;
 		console.log(payload);
 
@@ -38,6 +38,12 @@ export const setData = async (req: Request, res: Response, next: NextFunction) =
 			await ogm.writeCypher(query.botNPC, { server: payload.name, list: payload.npc });
 
 			broadcast((client) => client.json("npc/add", { server: payload.name, npc: payload.npc }));
+		}
+
+		if (payload.group?.length > 0) {
+			await ogm.writeCypher(query.botSubnet, { server: payload.name, name: payload.group });
+
+			broadcast((client) => client.json("subnet/add", { server: payload.name, name: payload.group }));
 		}
 
 		return res.json({ success: true });

@@ -6,6 +6,8 @@ import { ApiError } from "@/utils/errors";
 
 export const getData = async (req: Request, res: Response, next: NextFunction) => {
 	try {
+		const group = req?.body?.subnet || req?.query?.subnet || null;
+		
 		const Server = ogm.model("Server");
 
 		const collection = await Server.all();
@@ -15,7 +17,8 @@ export const getData = async (req: Request, res: Response, next: NextFunction) =
 		const files: any = {};
 		const npc: any = {};
 		const main: any = {};
-		const start: any = ["1570B800", "1570B801", "1570B802", "1570B803"];
+		const start: any = ["00", "01", "02", "03"];
+		const subnets: any = new Map([]);
 
 		const list: any = await collection.toJson();
 
@@ -45,11 +48,18 @@ export const getData = async (req: Request, res: Response, next: NextFunction) =
 					npc[node.name].push({ name: _npc.name, type: _npc.type });
 				}
 			}
+
+			if (node?.subnet?.length > 0) {
+				for (let relation of node.subnet) {
+					const _subnet = relation.node;
+					subnets.add(_subnet.name);
+				}
+			}
 		}
 
 		return res.json({
 			success: true,
-			data: { start, main, files, nodes, edges, npc },
+			data: { start, main, files, nodes, edges, npc, subnets: Array.from(subnets) },
 		});
 	} catch (e) {
 		next(e);

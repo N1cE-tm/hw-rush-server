@@ -27,6 +27,7 @@ export const wsHandler = async (ws: ClientSocket, req: Request) => {
 
 	const id = uuid();
 	ws.id = id;
+	ws.room = null;
 
 	ws.json("connected", { success: true, id });
 };

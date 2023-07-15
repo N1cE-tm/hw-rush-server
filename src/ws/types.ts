@@ -3,6 +3,7 @@ import type WebSocket from "ws";
 interface ClientSocket extends WebSocket {
 	user?: any;
 	id?: string;
+	subnet?: string | null;
 	json: (this: ClientSocket, method: string, payload: any) => void;
 	stringify: (this: ClientSocket, method: string, payload: any) => void;
 	notify: (this: ClientSocket, method: string, payload: any, exclude?: string | false) => void;
